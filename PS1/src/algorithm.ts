@@ -19,8 +19,12 @@ import { Flashcard, AnswerDifficulty, BucketMap } from "./flashcards";
  * @spec.requires buckets is a valid representation of flashcard buckets.
  */
 export function toBucketSets(buckets: BucketMap): Array<Set<Flashcard>> {
-  // TODO: Implement this function
-  throw new Error("Implement me!");
+  const maxBucket = Math.max(...buckets.keys(), 0);
+  const bucketArray: Array<Set<Flashcard>> = Array.from({ length: maxBucket + 1 }, () => new Set());
+  for (const [bucket, cards] of buckets) {
+    bucketArray[bucket] = cards;
+  }
+  return bucketArray;
 }
 
 /**
@@ -34,8 +38,14 @@ export function toBucketSets(buckets: BucketMap): Array<Set<Flashcard>> {
 export function getBucketRange(
   buckets: Array<Set<Flashcard>>
 ): { minBucket: number; maxBucket: number } | undefined {
-  // TODO: Implement this function
-  throw new Error("Implement me!");
+  const nonEmptyBuckets = buckets
+    .map((set, index) => (set.size > 0 ? index : -1))
+    .filter((index) => index !== -1);
+  if (nonEmptyBuckets.length === 0) return undefined;
+  return {
+    minBucket: Math.min(...nonEmptyBuckets),
+    maxBucket: Math.max(...nonEmptyBuckets),
+  };
 }
 
 /**
@@ -51,8 +61,13 @@ export function practice(
   buckets: Array<Set<Flashcard>>,
   day: number
 ): Set<Flashcard> {
-  // TODO: Implement this function
-  throw new Error("Implement me!");
+  const practiceSet = new Set<Flashcard>();
+  buckets.forEach((cards, index) => {
+    if (day % (index + 1) === 0) {
+      cards.forEach((card) => practiceSet.add(card));
+    }
+  });
+  return practiceSet;
 }
 
 /**
@@ -69,8 +84,20 @@ export function update(
   card: Flashcard,
   difficulty: AnswerDifficulty
 ): BucketMap {
-  // TODO: Implement this function
-  throw new Error("Implement me!");
+  const currentBucket = Array.from(buckets.entries()).find(([_, cards]) =>
+    cards.has(card)
+  )?.[0];
+  if (currentBucket === undefined) return buckets;
+
+  buckets.get(currentBucket)?.delete(card);
+  const newBucket =
+    difficulty === AnswerDifficulty.Wrong
+      ? 0
+      : Math.min(currentBucket + difficulty, buckets.size - 1);
+  if (!buckets.has(newBucket)) buckets.set(newBucket, new Set());
+  buckets.get(newBucket)?.add(card);
+
+  return buckets;
 }
 
 /**
@@ -81,8 +108,7 @@ export function update(
  * @spec.requires card is a valid Flashcard.
  */
 export function getHint(card: Flashcard): string {
-  // TODO: Implement this function (and strengthen the spec!)
-  throw new Error("Implement me!");
+  return `Hint: ${card.hint}`;
 }
 
 /**
@@ -93,8 +119,15 @@ export function getHint(card: Flashcard): string {
  * @returns statistics about learning progress.
  * @spec.requires [SPEC TO BE DEFINED]
  */
-export function computeProgress(buckets: any, history: any): any {
-  // Replace 'any' with appropriate types
-  // TODO: Implement this function (and define the spec!)
-  throw new Error("Implement me!");
+export function computeProgress(buckets: BucketMap, history: any): any {
+  const totalCards = Array.from(buckets.values()).reduce(
+    (sum, set) => sum + set.size,
+    0
+  );
+  const learnedCards = buckets.get(buckets.size - 1)?.size || 0;
+  return {
+    totalCards,
+    learnedCards,
+    progress: totalCards > 0 ? (learnedCards / totalCards) * 100 : 0,
+  };
 }
